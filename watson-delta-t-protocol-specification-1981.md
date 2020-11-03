@@ -1031,17 +1031,32 @@ Besides a procedure to obtain a packet buffer (defined in Section6),
 Delta-t needs two timer procedures supplied by the EIM, one to obtain
 the current dateTime and the other to set or cancel an alarm.
 
-function EIMtime ( {Arguments - none} {Results}
-datetime: DateTime); begin
-{returns dateTime as an integer in appropriate units relative to some start point}
-end {EIMtime}.
-procedure EIMalarm ( {Arguments}
-assoc:AR; {association for which the timer is being set.} cdt: DateTime; {dateTime when a DtTimeout call should be
-issued} rcFlg, {request (true)/cancel (false) flag indicating whether an
-alarm should be set or canceled} presenceFlg:Boolean; {This flag is valid only if rcFlg is true and
-is returned to the EIM by the alarm server and indicates that the ISR should be in memory before calling DtTimeout as the ISR may need updating or be used as indicted in return parameters.}
-{Results: none;}); begin
-{update the alarm server's database}. eno {EIMalarm}.
+```pascal
+function EIMtime (
+  {Arguments - none} 
+  {Results}
+    datetime: DateTime); 
+  begin
+    {returns dateTime as an integer in appropriate units relative to some start point}
+  end {EIMtime}.
+
+procedure EIMalarm ( 
+  {Arguments}
+  assoc:AR; {association for which the timer is being set.} 
+  cdt: DateTime; {dateTime when a DtTimeout call should be
+          issued}
+  rcFlg, {request (true)/cancel (false) flag indicating whether an
+          alarm should be set or canceled} 
+  presenceFlg:Boolean; {This flag is valid only if rcFlg is true and
+          is returned to the EIM by the alarm server and indicates that
+          the ISR should be in memory before calling DtTimeout as 
+          the ISR may need updating or be used as indicted in return
+          parameters.}
+  {Results: none;}); 
+begin
+  {update the alarm server's database}. 
+end {EIMalarm}.
+```
 
 # Delta-t Use of DeltaGram Packet Header Fields
 
