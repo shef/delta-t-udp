@@ -1,23 +1,9 @@
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<style type="text/css">
-body { width: 40em; }
-h1 {counter-increment: counter-h1; counter-reset: counter-h2;}
-h2 {counter-increment: counter-h2; counter-reset: counter-h3;}
-h3 {counter-increment: counter-h3; counter-reset: counter-h4;}
-h4 {counter-increment: counter-h4;}
-h1:before {content: counter(counter-h1) " ";}
-h2:before {content: counter(counter-h1) "." counter(counter-h2) " ";}
-h3:before {content: counter(counter-h1) "." counter(counter-h2) "." counter(counter-h3) " ";}
-h4:before {content: counter(counter-h1) "." counter(counter-h2) "." counter(counter-h3) "." counter(counter-h4) " ";}
-</style>
-</head>
-
-(Text extracted from PDF and reformatted as Markdown July 23 2011 by
-Tony Garnock-Jones. I've tried to reproduce the ASCII-art as
-faithfully as possible. TODO: Proof-read the text for OCR errors
-etc. TODO: Reconstruct the ASCII art. TODO: Reconstruct the
-source-code snippets.)
+> Text extracted from PDF and reformatted as Markdown July 23 2011 by
+> Tony Garnock-Jones. I've tried to reproduce the ASCII-art as
+> faithfully as possible.
+> * TODO: Proof-read the text for OCR errors, etc. 
+> * TODO: Reconstruct the ASCII art. 
+> * TODO: Reconstruct the source-code snippets.
 
 DELTA-t PROTOCOL SPECIFICATION
 
