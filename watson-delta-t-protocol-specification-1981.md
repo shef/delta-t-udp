@@ -1054,17 +1054,32 @@ DeltaGram.
 Graphically a DeltaGram packet has the following format when laid out
 in 32 bit blocks.
 
-O'-l 2-3 A-6 7 8-15 16-19 20-23 24-31 iPverl Ptypel PresllPdnl PhdrChksum       IPprtctLevl PAtexp |Plifetime
-IIIII !\I 1     Fia
-PdestAddr PdestAddr - continued
-PoriginAddr PoriginAddr - continued
-Ptdf - (packet type dependent field) Ptdf - continued
-Ptdf - continued Data packets only - contains user data
+```
+   0-1    2-3     4-6     7       8-15         16-19     20-23     24-31     
+ ___________________________________________________________________________
+| Pver | Ptype | Presl | Pdn | PhdrChksum | PprtctLev | PΔtext | Plifetime | 0 
+|______|_______|_______|_____|____________|___________|________|___________|
+|                              Pid                                         | 1 
+|__________________________________________________________________________|
+|                              PdestAddr                                   | 2 
+|__________________________________________________________________________|
+|                        PdestAddr - continued                             | 3 
+|__________________________________________________________________________|
+|                              PoriginAddr                                 | 4 
+|__________________________________________________________________________|
+|                       PoriginAddr - continued                            | 5 
+|__________________________________________________________________________|
+|                 Ptdf - (packet type dependent field)                     | 6 
+|__________________________________________________________________________|
+|                           Ptdf - continued                               | 7 
+|__________________________________________________________________________|
+|         Ptdf - continued Data packets only - contains used data          | variable 
+|__________________________________________________________________________|
 
+```
 The meaning of the fields is the following.
 
-Pver: 2 bit DeltaGram version number (see DeltaGram specification for
-usage).
+Pver: 2 bit DeltaGram version number (see DeltaGram specification for usage).
 
 Ptype: 2 bit packet type.
  - 0 Datapacket.
@@ -1081,8 +1096,8 @@ algorithm.
 
 PprtctLev: 4 bit protection level.
 
-PAtexp: 4 bits for determining tick size used to decrement Plifetime
-and to determine initial Plifetime. tick = 2**PAtexp / 256 seconds.
+PΔtexp: 4 bits for determining tick size used to decrement Plifetime
+and to determine initial Plifetime. tick = 2**PΔtexp / 256 seconds.
 
 Plifetime: 8 bits remaining packet lifetime, in tick units.
 
