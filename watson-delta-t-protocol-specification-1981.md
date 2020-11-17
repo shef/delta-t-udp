@@ -1613,122 +1613,294 @@ condition is checked in the procedure acceptData and the function
 acceptRendezvous and guarantees that all packets sent before the crash
 will have been destroyed, before receiving begins again.
 
-### ConnectionRecordDefinition
+### Connection Record Definition
 
 The Connection Record defined below is not meant to imply that a given
 implementation would require exactly the same variables. More or less
 variables may be needed depending on its algorithms. All variables are
 initialized to default values when the CR is created.
 
-CR= {ConnectionRecord}record Aassoc:AR; {association record defined in Section 6.3}
-AmaxPktSize, {max packet size for this association, set from global state when the CR is created.}
-AAtexp, {parameter set from global state to be used to compute the initial value of the packet Plifetime field, placed in the packet
-PAtexp fields, and used to derive the value for Stimer. A given implementation chooses AAtexp to create an appropriate Δt. Δt isthesum.Δt=R+MPL+A,where
-R= time sender normally expects to keep retransmiting (this time would usually be n average-round trip times).
-MPL = an estimate of worst case acceptable network-travel-time. It should be a value assuming queuing and processing in the longest expected chain of intermediate store and forward nodes.
-A= Maximum expected time until the receiver will Ack an SN. The value is a function of receiver's implementation or some reasonable worst case estimate such as a few seconds. A standard upper bound on A will be established.}
-Aretrytime:integer; {time between retransmissions when "Acks" are not received; a number related to average round trip time set
-from global state.}
-Aidt:DateTime; {The dateTime of the last initialization of the environment for this association.}
-{Send variables set to default values when the CR is initialized}
-Stimer, {Purpose: Stimer serves two functions, assurance and smooth data flow. The assurance function of the Stimer is also twofold: (1) to
-assure that the CR is maintained until all Acks will be received if they are ever going to arrive (graceful close, only a remote end crash or network partition would prevent their timely arrival), (2) to assure that no SN is reused with new data until all packets containing it have died. The smooth data flow function guarantees that the sender's CR is active longer than the peer's CR so that acceptable SNs are generated. No harm results if Stimer is allowed to run beyond its expiration time. Its purpose could be compromised if it is allowed to expire early. When Stimer expires and Sou^Sowle an error condition exists (see
-below). Default:        = 0. When changed: Stimer is set when a new sequence number (SN) is sent
-in Data (see procedure sendData) or Rendezvous packets (see procedure sendRendezvous), or a reliable-Ack
-packet is sent requiring a Data packet as an "Ack" (see procedure sendAck). It is set to the dateTime it is to expire. The Stimer interval is 3*2**AAtexp. Stimer is reset to 0 when it expires (see procedure StimerExpired).}
-StimeStamp:DateTime; {Purpose: StimeStamp is the dateTime of receipt of a Data or
-Rendezvous packet requiring an Ack packet. This is a model dependent variable required here because an Ack is not necessarily generated immediately when Data or Rendezvous packets are tested for acceptance. The EIM must schedule a DtAck call to cause Delta-t to update the receive window (Riwre-Riwle) and generate the Ack. If no delay were assumed between the return from a DtPktRcvd call and the issuing of the DtAck, this variable would not be needed. The requirement that must be met for correct Delta-t operation is that there must be no gap between the timing of the lifetimes of the latest SN and its Ack. The condition to be met is that the combined lifetime of the latest SN received in a Data or Rendezvous packet and its Ack must not exceed 2*2**PAtexp (2Δt) (see Appendix A). Exactly where a given implementation chooses to end the timing of the lifetime of a received SN and begin the lifetime timing of its Ack is an implementation choice. In this model StimeStamp is used to compute
-the interval between acceptance testing of the most recently arrived SN and its Ack. The Rtimer (see receive state below) is to be refreshed at the point the lifetime timing of each incoming SN stops. Default:       = 0.
-When changed: StimeStamp is set to the current dateTime during the procedures processData or processRendezvous and reset
-when an Ack packet is sent (see procedure sendAck)}
-{Now we define a send SN space, a series of SNs that correspond in SN space to the pointers in the ISR logical send queue (see Appendix B).}
-Sou, {Purpose:  SN of the oldest unAcked SN. If Sou = Sowle then all Data
-or Rendezvous packets sent have been Acked. Default:    = arbitrary.
-When changeo: Sou is updated during the procedure processAck as data or Rendezvous packets sent are Acked.
-Sowle, {Purpose:        SN of the next bit or Rendezvous packet to be sent
-(output-window-left-£dge). Default:     = Sou.
-When changed: Sowle is changed in the procedures sendData and sendRendezvous when a Data or Rendezvous packet is
-Sowre:SN; {Purpose:
-created.
-SN + 1 of "largest SN" the receiver can accept (^utput-window-^ight-^dge). Thatis,thereceiverhas
-advertised willingness to receive SN's up to but not including Sowre. Sowre is used to determine if Data packets containing data can be sent (see function shouldData), or a Rendezvous packet should be sent (see function shouldRendezvous).
-= Sowle + n, where n is a network or association default.
-Default: When changed: Sowre is updated to Sou + Pwindow in the procedure
-processAck, to Sowle in the procedure sendData when a E-bit is sent (output window goes zero), and to Sowle plus an offset provided by the EIM in procedure DtStartData.
-{all arithmetic and inequalities with SNs must be performed correctly modulo 2**32. The relationship Sou £ Sowle < Sowre must always hold}
-SrendSenderInd, {Purpose:       Indicates that a Rendezvous packet has been sent and the
-sender is waiting for its output window to open (Sowre > Sowle).
-Default: false. When changed:   Set during the procedure sendRendezvous and reset
-Sovflwind, {Purpose:
-during the procedure processAck, when the window opens.}
-A model dependent flag recording that data sent have overflowed. This will result in a Rendezvous packet being sent when DtStartData is called.
-Default: false. When changed:   Sovflwind is set in the procedure processAck when
-SeSentInd, {Purpose:
-overflow occurs and is reset in sendRendezvous when the SN's of the overflow data have been skipped.}
-A model dependent flag indicating that an E-bit has been sent, but has not yet been Acked. While SeSentInd is true the output window (Sowre-Sowle should remain zero.
-Default: false.
-When changed:
-Sretryind, {Purpose:
-SeSentInd is set in the procedure sendData when an E-bit is sent and is reset in the procedure processAck.}
-A model dependent variable that records that the
-next DtStartData is for retry data. Default: false.
-When changed: It is set during the procedure sendRetry. It is reset during the procedure sendData.
-SseriousNakInd:Boolean;
-{Purpose:
-Records that a Nak has been received indicating there is some problem serious enough to suspend sending new data packets (not required for correct operation, only for efficiency). Retrys should be continued for the normal cycle just in case the Nak was caused by a transient malfunction or ambiguous Nak exists (see Section 6.6.1).
-false. the procedures StimerExpired and processAck}
-SnakReason: integer; {Purpose:  Location for keeping the latest PnakReason. This code is
-reported as a problem hint to the EIM if a giveup timeout error occurs. It is advisory information only.
-Default: 0,meanshavenotreceivedanyNakreason. When changed:      Set during processNak and reset in procedures
-processAck and, StimerExpired (when the CR is reset to default values) (when all data or, packets sent have been Acked).}
-Default: When changed:  During the procedure processNak, and reset during
-SinPtr, SoutPtr, SendPtr = fRetryRecord (see below); {Purpose:
-ThesepointerspointtoRetryRecordsinaRetryQueue. (How retry is handled is model or implementation dependent. A particular retry algorithm is included here for completeness of the model.) SinPtr is nil or points to the first Retry Record in the queue. SoutPtr is nil or points to the oldest RetryRecord in the queue with an active retry timer. SendPtr is nil or points to the end (last) record in the queue. The errTries in the closed interval between SinPtr and SoutPtr will be retransmitted when their retry timers expire, if packet lifetime has not expired. The entries in the interval between SoutPtr but not including the entry at SoutPtr, and SendPtr including the entry at SendPtr have had their maximum number of retries and are waiting for acknowledgement.
-The oldest entry that can be retried is at SoutPtr and the youngest will be added in front of the entry at SinPtr. The entries are thus ordered by age.
-The condition SoutPtr h SendPtr is important as it indicates SNs exist that have had their maximum retrys and no new data should be sent (see AppendixA).
-RetryRecord = recoro rrtype: (Data,Ack,Rendezvous);{typeof
-packet} rrEntrytime, {time placed in queue} rrRetryTimer, {time when next retry can take
-place} rrLifetime: DateTime; {time when packet lifetime
-expires} rrPID: SN; {SN in packet Pid field}
-rrSNO: integer; {for Data packets this is Pdl, for Ack packets its Pwindow, for Rendezvous packets its Psno}
-rrBlink, {back link to previous entry} rrFlink = \ RetryRecord; {forward link to next
-entry} end {RetryRecord}.
-Default: SinPtr=SoutPtr=SencPtr=nil. When changed:      These pointers are manipulated during the various
-retry procedures (see Section 6.4.2), and are reset in the procedure StimerExpired when the CR is returned to its default state.}
-{Receive related variables}
-Rtimer: Datetime;
-{Purpose:
-Default:
-Rtimer provides assurance and smooth data flow services (see Appendix A). The assurance service of the Rtimer is to provide protection from duplicate packets. The smooth
-data flow service of the Rtimer is to guarantee that any packet sent with Pdrf = false that arrives at the receiver after a predecessor packet sent with Pdrf = true, will be acceptable. Pdrf is used for detecting misseguenced packets [6].
-= 0.
-When changed: Rtimer is set when a new SN is accepted (new data or Rendezvous packet), or there is a receive window
-RAtexp: integer;
-{Purpose:
-overflow even if no data is accepted. When Rtimer = 0, then Data or Rendezvous packets will only be accepted that have Pdrf = true, any other packet is considered out-of-sequence. Such a packet may be held at the implementer's option but its lifetime must continue to count down until it is in sequence. While Rtimer > 0 packets are accepted when insequence with no regard to the value of Pdrf.
-This quantity is used to compute the value of the Rtimer interval, to compute the Plifetime field in Ack packets, is used as the PAtexp field in Ack packets, and to determine if the receive initialization wait interval has expired.
-Default: When changed: It is set during the procedures processRendezvous and
-processData when the first packet is accepted for a given CR. The value is initialized from the PAtexp field in the received packet that caused Rtimer to be first set.}
-IReceive SN space variables, logical receive queue SNs} Riwle,
-{Purpose:
-Default:
-Next expected and acceptable SN (_input-window-^eft-^dge). Used to protect against lost, duplicate, and misseguenced packets. The procedures, as written in this specification, assume that packets are processed in sequence. Logically, we assume that out-of-sequence packets, if not discarded, are recognized and buffered until they can be processed in sequence. Their Plifetime fields must continue to count down.
-Undefined for assurance purposes, however, the interval
-= undefined.
-Riwre-Riwle may be meaningful for flow control. When changed: Riwle is adjusted during the procedures processData and
-Riwre:SN; {Purpose:
-processRendezvous, as SNs are accepted.}
-SN of the next bit beyond where there is currently available buffer space (J-nput-window-j^ight-^dge). That is, the receiver can accept SN's up to but not including Riwre. The interval between Riwle and Riwre defines the
-number of SNs that can be accepted and the value of Pwindow sent in Ack packets. This window is advisory only.
-Default: undefined. When changed: Riwre is adjusted in procedures DtAck, processData,
-processRendezvous. It represents user interface
-Receive events.} Rov fIwind:Boolean;
-{Purpose:       A flag indicating that the receiver's buffers were overrun and that Data packets should not be accepted until a Rendezvous packet is accepted and Riwle has been adjusted to protect against duplicates of the overflow bits.
-Default: false. When changed: It is set during the procedure processData when
-overflow occurs, and is reset during the procedure processRendezvous and DtTimeout.}
-end {CR}.
+```pascal
+CR = {ConnectionRecord} record 
+    Aassoc:AR; {association record defined in Section 6.3}
 
-### AllocationandDeallocationofState
+    AmaxPktSize, {max packet size for this 
+       association, set from global state when the CR is created.}
+
+    AAtexp, {parameter set from global state to be used to compute the 
+    initial value of the packet Plifetime field, placed in the packet
+    PAtexp fields, and used to derive the value for Stimer. A given 
+    implementation chooses AAtexp to create an appropriate Δt. Δt 
+    is the sum, Δt=R+MPL+A, where
+        R = time sender normally expects to keep retransmiting (this time 
+            would usually be n average-round trip times).
+        MPL = an estimate of worst case acceptable network-travel-time. It 
+            should be a value assuming queuing and processing in the longest 
+            expected chain of intermediate store and forward nodes.
+        A= Maximum expected time until the receiver will Ack an SN. The 
+            value is a function of receiver's implementation or some 
+            reasonable worst case estimate such as a few seconds. A 
+            standard upper bound on A will be established.}
+
+    Aretrytime:integer; {time between retransmissions when "Acks" 
+        are not received; a number related to average round trip time set
+        from global state.}
+
+    Aidt:DateTime; {The dateTime of the last initialization of 
+        the environment for this association.}
+
+    {Send variables set to default values when the CR is initialized}
+    
+Stimer, 
+    {Purpose: Stimer serves two functions, assurance and smooth data 
+    flow. The assurance function of the Stimer is also twofold: (1) to
+    assure that the CR is maintained until all Acks will be received if 
+    they are ever going to arrive (graceful close, only a remote end crash 
+    or network partition would prevent their timely arrival), (2) to 
+    assure that no SN is reused with new data until all packets containing 
+    it have died. 
+    The smooth data flow function guarantees that the sender's CR is 
+    active longer than the peer's CR so that acceptable SNs are generated. 
+    No harm results if Stimer is allowed to run beyond its expiration 
+    time. Its purpose could be compromised if it is allowed to expire 
+    early. 
+    When Stimer expires and Sou^Sowle an error condition exists (see
+        below). 
+    Default:        = 0. 
+    When changed:   Stimer is set when a new sequence number (SN) is sent
+                    in Data (see procedure sendData) or Rendezvous packets 
+                    (see procedure sendRendezvous), or a reliable-Ack
+                    packet is sent requiring a Data packet as an "Ack" (see 
+                    procedure sendAck). It is set to the dateTime it is to 
+                    expire. The Stimer interval is 3*2**AAtexp. Stimer 
+                    is reset to 0 when it expires (see procedure StimerExpired).}
+
+StimeStamp:DateTime; 
+    {Purpose: StimeStamp is the dateTime of receipt of a Data or
+    Rendezvous packet requiring an Ack packet. This is a model dependent 
+    variable required here because an Ack is not necessarily generated 
+    immediately when Data or Rendezvous packets are tested for 
+    acceptance. The EIM must schedule a DtAck call to cause Delta-t to 
+    update the receive window (Riwre-Riwle) and generate the Ack. If no 
+    delay were assumed between the return from a DtPktRcvd call and the 
+    issuing of the DtAck, this variable would not be needed. The 
+    requirement that must be met for correct Delta-t operation is that 
+    there must be no gap between the timing of the lifetimes of the latest 
+    SN and its Ack. The condition to be met is that the combined lifetime 
+    of the latest SN received in a Data or Rendezvous packet and its Ack 
+    must not exceed 2*2**PAtexp (2Δt) (see Appendix A). Exactly where 
+    a given implementation chooses to end the timing of the lifetime of a 
+    received SN and begin the lifetime timing of its Ack is an 
+    implementation choice. In this model StimeStamp is used to compute
+    the interval between acceptance testing of the most recently arrived 
+    SN and its Ack. The Rtimer (see receive state below) is to be 
+    refreshed at the point the lifetime timing of each incoming SN stops. 
+    Default:       = 0.
+    When changed:   StimeStamp is set to the current dateTime during the 
+                    procedures processData or processRendezvous and reset
+                    when an Ack packet is sent (see procedure sendAck)}
+
+{Now we define a send SN space, a series of SNs that correspond in SN 
+space to the pointers in the ISR logical send queue (see Appendix B).}
+
+Sou, 
+    {Purpose:   SN of the oldest unAcked SN. If Sou = Sowle then all Data
+                or Rendezvous packets sent have been Acked. 
+    Default:    = arbitrary.
+    When changed: Sou is updated during the procedure processAck as data 
+                  or Rendezvous packets sent are Acked.
+
+Sowle, 
+    {Purpose:   SN of the next bit or Rendezvous packet to be sent
+                (output-window-left-£dge). 
+    Default:    = Sou.
+    When changed: Sowle is changed in the procedures sendData and 
+                  sendRendezvous when a Data or Rendezvous packet 
+                  is created.
+
+Sowre:SN; 
+    {Purpose:   SN + 1 of "largest SN" the receiver can accept 
+                (output-window-right-edge). That is, the receiver has
+                advertised willingness to receive SN's up to but not 
+                including Sowre. 
+                Sowre is used to determine if Data packets containing data 
+                can be sent (see function shouldData), or a Rendezvous 
+                packet should be sent (see function shouldRendezvous).
+    Default:    = Sowle + n, where n is a network or association default.
+    When changed: Sowre is updated to Sou + Pwindow in the procedure
+                  processAck, to Sowle in the procedure sendData when a 
+                  E-bit is sent (output window goes zero), and to Sowle 
+                  plus an offset provided by the EIM in procedure 
+                  DtStartData.
+
+    {all arithmetic and inequalities with SNs must be performed correctly 
+modulo 2**32. The relationship Sou <= Sowle <= Sowre must always hold}
+
+SrendSenderInd, 
+    {Purpose:   Indicates that a Rendezvous packet has been sent and the
+                sender is waiting for its output window to open 
+                (Sowre > Sowle).
+    Default:    false. 
+    When changed:   Set during the procedure sendRendezvous and reset
+                    during the procedure processAck, when the window 
+                    opens.}
+
+Sovflwind, 
+    {Purpose:   A model dependent flag recording that data sent have 
+                overflowed. This will result in a Rendezvous packet being 
+                sent when DtStartData is called.
+    Default:    false. 
+    When changed:   Sovflwind is set in the procedure processAck when
+                    overflow occurs and is reset in sendRendezvous when 
+                    the SN's of the overflow data have been skipped.}
+
+SeSentInd, 
+    {Purpose:   A model dependent flag indicating that an E-bit has been sent, but has not yet been Acked. While SeSentInd is true the output window (Sowre-Sowle should remain zero.
+    Default:    false.
+    When changed:   SeSentInd is set in the procedure sendData when an 
+                     E-bit is sent and is reset in the procedure processAck.}
+
+Sretryind, 
+    {Purpose:   A model dependent variable that records that the
+                next DtStartData is for retry data. 
+    Default:    false.
+    When changed: It is set during the procedure sendRetry. It is 
+                  reset during the procedure sendData.
+
+SseriousNakInd:Boolean;
+    {Purpose:   Records that a Nak has been received indicating there is 
+                some problem serious enough to suspend sending new data 
+                packets (not required for correct operation, only for 
+                efficiency). Retrys should be continued for the normal 
+                cycle just in case the Nak was caused by a transient 
+                malfunction or ambiguous Nak exists (see Section 6.6.1).
+    Default:    false. 
+    When changed:   During the procedure processNak, and reset during
+                    the procedures StimerExpired and processAck}
+
+SnakReason: integer; 
+    {Purpose:   Location for keeping the latest PnakReason. This code is
+                reported as a problem hint to the EIM if a giveup timeout 
+                error occurs. It is advisory information only.
+    Default:    0, meanshavenotreceivedanyNakreason. 
+    When changed:      Set during processNak and reset in procedures
+                       processAck and, StimerExpired (when the CR is reset 
+                        to default values) (when all data or packets sent 
+                        have been Acked).}
+
+SinPtr, SoutPtr, SendPtr = fRetryRecord (see below); 
+    {Purpose:   These pointers point to RetryRecords in a Retry Queue. (How 
+                retry is handled is model or implementation dependent. A 
+                particular retry algorithm is included here for completeness of 
+                the model.) SinPtr is nil or points to the first Retry Record 
+                in the queue. SoutPtr is nil or points to the oldest 
+                RetryRecord in the queue with an active retry timer. SendPtr is 
+                nil or points to the end (last) record in the queue. The 
+                entries in the closed interval between SinPtr and SoutPtr will 
+                be retransmitted when their retry timers expire, if packet 
+                lifetime has not expired. The entries in the interval between 
+                SoutPtr but not including the entry at SoutPtr, and SendPtr 
+                including the entry at SendPtr have had their maximum number of 
+                retries and are waiting for acknowledgement.
+                The oldest entry that can be retried is at SoutPtr and the 
+                youngest will be added in front of the entry at SinPtr. The 
+                entries are thus ordered by age.
+                The condition SoutPtr != SendPtr is important as it indicates SNs 
+                exist that have had their maximum retrys and no new data should 
+                be sent (see AppendixA).
+
+                    RetryRecord = record 
+                        rrtype: (Data,Ack,Rendezvous); {type of
+                                packet} 
+                        rrEntrytime, {time placed in queue} 
+                        rrRetryTimer, {time when next retry can take
+                                place} 
+                        rrLifetime: DateTime; {time when packet lifetime
+                                expires} 
+                        rrPID: SN; {SN in packet Pid field}
+                        rrSNO: integer; {for Data packets this is Pdl, for 
+                                Ack packets its Pwindow, for Rendezvous 
+                                packets its Psno}
+                        rrBlink, {back link to previous entry} 
+                        rrFlink = RetryRecord; {forward link to next
+                                entry} 
+                    end {RetryRecord}.
+
+    Default:    SinPtr=SoutPtr=SencPtr=nil. 
+    When changed:   These pointers are manipulated during the various
+                    retry procedures (see Section 6.4.2), and are reset 
+                    in the procedure StimerExpired when the CR is 
+                    returned to its default state.}
+
+{Receive related variables}
+    Rtimer: Datetime;
+        {Purpose:   Rtimer provides assurance and smooth data flow services 
+                    (see Appendix A). The assurance service of the Rtimer is 
+                    to provide protection from duplicate packets. The smooth
+                    data flow service of the Rtimer is to guarantee that any 
+                    packet sent with Pdrf = false that arrives at the receiver 
+                    after a predecessor packet sent with Pdrf = true, will be 
+                    acceptable. Pdrf is used for detecting misseguenced 
+                    packets [6].
+        Default:=   0.
+        When changed: Rtimer is set when a new SN is accepted (new data or 
+                      Rendezvous packet), or there is a receive window
+                      overflow even if no data is accepted. When Rtimer = 0, 
+                      then Data or Rendezvous packets will only be accepted 
+                      that have Pdrf = true, any other packet is considered 
+                      out-of-sequence. Such a packet may be held at the 
+                      implementer's option but its lifetime must continue to 
+                      count down until it is in sequence. While Rtimer > 0 
+                      packets are accepted when insequence with no regard to 
+                      the value of Pdrf.
+
+    RAtexp: integer;
+        {Purpose:   This quantity is used to compute the value of the Rtimer 
+                    interval, to compute the Plifetime field in Ack packets, 
+                    is used as the PAtexp field in Ack packets, and to 
+                    determine if the receive initialization wait interval has 
+                    expired.
+        Default:    = undefined. 
+        When changed: It is set during the procedures processRendezvous and
+                      processData when the first packet is accepted for a 
+                      given CR. The value is initialized from the PAtexp 
+                      field in the received packet that caused Rtimer to be 
+                      first set.}
+
+{Receive SN space variables, logical receive queue SNs} 
+    Riwle,
+        {Purpose:   Next expected and acceptable SN (input-window-left-edge). 
+                    Used to protect against lost, duplicate, and misseguenced packets. The procedures, as written in this specification, assume that packets are processed in sequence. Logically, we assume that out-of-sequence packets, if not discarded, are recognized and buffered until they can be processed in sequence. Their Plifetime fields must continue to count down.
+        Default:    Undefined for assurance purposes, however, the interval
+                    Riwre-Riwle may be meaningful for flow control. 
+        When changed: Riwle is adjusted during the procedures processData and
+                      processRendezvous, as SNs are accepted.}
+
+    Riwre:SN; 
+        {Purpose:   SN of the next bit beyond where there is currently 
+                    available buffer space (input-window-right-edge). That 
+                    is, the receiver can accept SN's up to but not including 
+                    Riwre. The interval between Riwle and Riwre defines the
+                    number of SNs that can be accepted and the value of 
+                    Pwindow sent in Ack packets. This window is advisory only.
+        Default:    undefined. 
+        When changed: Riwre is adjusted in procedures DtAck, processData,
+                      processRendezvous. It represents user interface
+                      Receive events.} 
+
+    Rov fIwind:Boolean;
+        {Purpose:   A flag indicating that the receiver's buffers were overrun 
+                    and that Data packets should not be accepted until a 
+                    Rendezvous packet is accepted and Riwle has been adjusted 
+                    to protect against duplicates of the overflow bits.
+        Default:    false. 
+        When changed: It is set during the procedure processData when
+                      overflow occurs, and is reset during the procedure 
+                      processRendezvous and DtTimeout.}
+end {CR}.
+```
+
+### Allocation and Deallocation of State
 
 The CR is created and destroyed by the following procedures.
 
