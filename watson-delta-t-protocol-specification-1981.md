@@ -2397,7 +2397,7 @@ carry data, the secondary one, as part of window management, is to
 "Ack" a reliable-Ack that is reporting the opening of a zero window,
 completing the rendezvous-at-the-sender procedure. In order for a Data
 packet to be accepted there must have been sufficient time since the
-Delta-t environment was initialized ana the SN of at least one bit in
+Delta-t environment was initialized and the SN of at least one bit in
 the packet, or the Pid (in the case of dataless Data packets) must
 equal Riwle. If a bit is accepted jor overflow occurs Rtimer is
 updated.
@@ -2409,23 +2409,50 @@ copies the accepted data to buffers it manages. The EIM will signal
 the user if a Receive completes. When an Ack is required, the EIM will
 call DtAck to report its current window and an Ack will be generated.
 
-procedure       processData ({args} crPtr:CRpointer; rPkt, sPkt:PKTpointer; rWindow, {returns} var offset, count, prtctLev:integer;var ackFlg,Bflg,Eflg,nakFlg:Boolean);
-const n = {large number}; var temp:integer; b:Boolean; procedure        acceptData (crPtr:CRpointer; rPkt sPkt:PKTpointer; var
-ackFlg, nakFlg, b:Boolean); {defined below};
-begin with crPtrf do
-begin acceptData (crPtr, rPkt, sPkt, ackFlg, nakFlg, b,);
-if b then
-begin {packet accepted} deleteAckedEntries (crPtr, true, 0); {see discussion
-of retry in Section 6.4.2. This procedure deletes any
-Acks from the retry structure} if Rtimer = 0 then
-begin {update CR receive variables} Riwle := Pid; RAtexp := PAtexp
-end; prtctLev:= PprtctLev; temp:= Pdl-(Riwle-Pid); {number of data bits at and to
-right of Riwle} offset:= 256 + (Riwle-Pid); {offset in packet to begin
-accepting data, assumes bits in header run 0-255} 8flg:= (Pb and (offset = 256)); Riwre:= Riwle + rWinoow; count:= min (temp, Riwre-Riwle,n); {number of bits that
-can be accepted} Eflg:= (Pe and (count = temp));{last accepted bit is
-labeled W if (count > 0) then setTimer (crPtr, Rtimer,
-2*2**RAtexp ,~7aTse); RovflwInd:= (count A temp); Riwle:= Riwle + count; end
-end end {processData}.
+```pascal
+procedure   processData ({args} crPtr:CRpointer; rPkt,
+            sPkt:PKTpointer; rWindow, {returns} var offset, count,
+            prtctLev:integer;var ackFlg,Bflg,Eflg,nakFlg:Boolean);
+    const n = {large number}; 
+    var temp:integer; 
+    b:Boolean;
+    procedure   acceptData (crPtr:CRpointer; rPkt sPkt:PKTpointer; var
+                ackFlg, nakFlg, b:Boolean); {defined below};
+
+begin
+    with crPtrf do
+        begin acceptData (crPtr, rPkt, sPkt, ackFlg, nakFlg, b,);
+
+        if b then
+
+        begin {packet accepted}
+            deleteAckedEntries (crPtr, true, 0); {see discussion
+                of retry in Section 6.4.2. This procedure deletes any
+                Acks from the retry structure}
+            if Rtimer = 0 then
+                begin {update CR receive variables} 
+                    Riwle := Pid; 
+                    RAtexp := PAtexp
+                end; 
+            prtctLev:= PprtctLev; 
+            temp:= Pdl-(Riwle-Pid); {number of data bits at and to
+                right of Riwle} 
+            offset:= 256 + (Riwle-Pid); {offset in packet to begin
+                accepting data, assumes bits in header run 0-255} 
+            Bflg:= (Pb and (offset = 256)); 
+            Riwre:= Riwle + rWindow; 
+            count:= min (temp, Riwre-Riwle,n); {number of bits that
+                can be accepted} 
+            Eflg:= (Pe and (count = temp));{last accepted bit is
+                labeled E}
+        if (count > 0) then setTimer (crPtr, Rtimer,
+            2*2**RAtexp, false); 
+        RovflwInd:= (count A temp); 
+        Riwle:= Riwle + count; 
+        end
+    end 
+end {processData}.
+```
 
 The following procedure and associated functions specify the rules for
 Data packet acceptance. To be accepted there must have been enough
