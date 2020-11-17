@@ -1,4 +1,4 @@
-> Text extracted from PDF and reformatted as Markdown July 23 2011 by
+> Text extracted from PDF and reformatted as Markdown July 23, 2011 by
 > Tony Garnock-Jones. I've tried to reproduce the ASCII-art as
 > faithfully as possible.
 > * TODO: Proof-read the text for OCR errors, etc. 
@@ -2269,56 +2269,126 @@ header-only, to be sent. DtPktRcvd should have high enough priority so
 that packet lifetimes are unlikely to expire due to long packet
 queuing delays.
 
-procedure       DtPktRcvd ( {args}
-assoc:AR; {association record} rPkt,= {pointertoheaderbufferforthereceivedpacket.
-The size of the packet can be determined from the packet type and,
-if a Data packet, the Pdl field.} sPkt:PKT; {packet header buffer for possible Nak packet}
-timeStamp:dateTime; {time packet was received} rWindow:integer; {number of bits of potential buffer space
-available for association.}
-{returns} var type:integer; {packet type or value indicating ignore other
-returns.} var ackFlg:Boolean; {If true the EIM should issue a DtAck call at a convenient point to cause an Ack packet to be sent with latest receive window.}
-IData packet} var offset,       {offset relative to start of packet at which to
-obtain first data bit} count,   {number of bits to accept}
-prtctLev:integer; {protection level of the data} var Bflg,
-Eflg    {flags indicating respectively whether first accepted bit is labeled by a B mark and the last acepted bit is labeled by an E mark.}
-nakFlg, {true if Nak formed}
-{Ack packet} var ovflwFlg:Boolean;      {flag if true all data bits at queue
-position ouPtr + ackOffset and beyond have overflowed and should be reset as if never sent and be sent again.}
-var ackOffset,  {SN offset relative to ouPtr in ISR for the number of data bits Acked}
-sendCode,       {(Also returned for Nak packets) 0 - means data sending is blocked, do not issue DtStartData calls.
-1 - means even if owreOffset is smaller than desired (including zero), issue a DtStartData call when data needs sending to enter rendezvous-at-sender
-procedure. 2 - means issue a DtStartData call, even if there is
-no data needing sending to cause a Data packet to be sent to Ack a reliable-Ack.}
-owreOffset:integer; {The output window. This information is passed to the EIM for possible saving in its
-{Rendezvous packet} var rsFlg:Boolean;
-ISR and subsequent return to Delta-t as an efficiency aid and when the CR is reclaimed. How owreOffset and sendCode can be used,by the EIM in its policy for issuing DtStartData calls is discussed in Appendix B.}
-{This returned flag indicates that the other end wants to be reliably informed when the input window opens.})
-{Nak packet} {The parameter sendCode above is also returned for received Nak
-packetsi;
-const n = {value indicating ignore other returns}; var crPtr:CRpointer;
-remainingLifetime:integer;
-procedure procedure procedure procedure procedure
-begin type:= n;
-processData ({defined in Section 6.6.2}); processAck ({defined in Section 6.6.3}); processRendezvous ({defined in Section 6.6.4}); processNak ({defined in Section 6.6.5}); sendNak ({defined in Section        6.6.6});
-getCR (assoc, crPtr); if crPtr A nil then {if crPtr = nil packet will be discarded and
-become "lost"''! begin
-ackFlg:= false; nakFlg:= false; offset:= 0; count:= 0; prtctLev:= 0; {or should it be highest level?} Bflg:= false;
-Eflg:= false; ackOffset:= 0; owreOffset:= 0; ovflwFlg:= false; sendCode:= II rsFlg:= false; DGadjustLifetime (EIMtime-timeStamp, 0, rPkt,remainingLifetime)
-iadjusts lifetime for time spent on Delta-t queue and checks to see if lifetime has expired. If lifetime has expired remainingLifetime returns£0.};
-if remainingLifetime <_ 0 then with rPkt^-do if (Ptype = Data) then
-begin nakFlg:= true; type:= Data;
-end end
-end end {DtPktRcvd}.
-sendNak (crPtr, rPtr, sPkt, 3,{lifetime expired}remainingLifetime)
-end
-{Sending the Nak is optional.}
-else begin
-type:= Ptype; {code for switch to appropriate version routines would
-go here} case type o£
-Data: processData (crPtr, rPkt, sPkt, rWindow, offset, count, prtctLev, ackFlg, Bflg, Eflg, nakFlg);
-Ack: processAck (crPtr, rPkt, ackOffset, ovflwFlg, owreOffset, sendCode);
-Nak: processNak (crPtr, rPkt, sendCode); Dcntrl: if rPkt.Psubtype = 1 then processRendezvous
-(crPtr, rPkt, rWindow, ackFlg, rsFlg);
+```pascal
+procedure DtPktRcvd ( 
+    {args}
+    assoc:AR; {association record} 
+    rPkt,= {pointertoheaderbufferforthereceivedpacket.
+            The size of the packet can be determined from the packet type and,
+            if a Data packet, the Pdl field.} 
+    sPkt:PKT; {packet header buffer for possible Nak packet}
+    timeStamp:dateTime; {time packet was received} 
+    rWindow:integer; {number of bits of potential buffer space
+        available for association.}
+    
+    {returns} 
+    var type:integer; {packet type or value indicating ignore other
+        returns.} 
+    var ackFlg:Boolean; {If true the EIM should issue a DtAck call at a 
+        convenient point to cause an Ack packet to be sent with latest receive 
+        window.}
+    {Data packet} 
+    var offset,             {offset relative to start of packet at which to
+                            obtain first data bit} 
+        count,              {number of bits to accept}
+        prtctLev:integer;   {protection level of the data} 
+    var Bflg,
+        Eflg                {flags indicating respectively whether first accepted 
+                            bit is labeled by a B mark and the last acepted bit is
+                            labeled by an E mark.}
+        nakFlg,             {true if Nak formed}
+    
+    {Ack packet} 
+    var ovflwFlg:Boolean;   {flag if true all data bits at queue
+                            position ouPtr + ackOffset and beyond have 
+                            overflowed and should be reset as if never
+                            sent and be sent again.}
+    var ackOffset,          {SN offset relative to ouPtr in ISR for the
+                            number of data bits Acked}
+        sendCode,           {(Also returned for Nak packets) 0 - means data
+                            sending is blocked, do not issue DtStartData calls.
+                            1 - means even if owreOffset is smaller than desired
+                                (including zero), issue a DtStartData call when
+                                data needs sending to enter rendezvous-at-sender
+                                procedure. 
+                            2 - means issue a DtStartData call, even if there is
+                                no data needing sending to cause a Data packet to
+                                be sent to Ack a reliable-Ack.}
+    owreOffset:integer;     {The output window. This information is
+                            passed to the EIM for possible saving in its
+                            ISR and subsequent return to Delta-t as an
+                            efficiency aid and when the CR is reclaimed. 
+                            How owreOffset and sendCode can be used by the
+                            EIM in its policy for issuing DtStartData
+                            calls is discussed in Appendix B.}
+
+    {Rendezvous packet}
+    var rsFlg:Boolean;      {This returned flag indicates that the other
+                            end wants to be reliably informed when the
+                            input window opens.})
+    
+    {Nak packet} 
+        {The parameter sendCode above is also returned for received Nak
+            packets};
+    const n = {value indicating ignore other returns};
+    var crPtr:CRpointer;
+        remainingLifetime:integer;
+    procedure processData ({defined in Section 6.6.2});
+    procedure processAck ({defined in Section 6.6.3});
+    procedure processRendezvous ({defined in Section 6.6.4});
+    procedure processNak ({defined in Section 6.6.5});
+    procedure sendNak ({defined in Section 6.6.6});
+
+begin
+    type:= n;
+    getCR (assoc, crPtr);
+    if crPtr != nil then {if crPtr = nil packet will be discarded and
+        become "lost"}
+        begin
+            ackFlg:= false;
+            nakFlg:= false;
+            offset:= 0;
+            count:= 0;
+            prtctLev:= 0; {or should it be highest level?}
+            Bflg:= false;
+            Eflg:= false;
+            ackOffset:= 0;
+            owreOffset:= 0;
+            ovflwFlg:= false;
+            sendCode:= 1;
+            rsFlg:= false;
+            DGadjustLifetime (EIMtime-timeStamp, 0, rPkt,remainingLifetime)
+                {adjusts lifetime for time spent on Delta-t queue and
+                checks to see if lifetime has expired. If lifetime has
+                expired remainingLifetime returns <0.};
+            if remainingLifetime < 0 then with rPkt^-do
+                if (Ptype = Data) then
+                    begin
+                        nakFlg:= true;
+                        type:= Data;
+                        sendNak (crPtr, rPtr, sPkt, 3,{lifetime
+                            expired}remainingLifetime)
+                    end
+                        {Sending the Nak is optional.}
+                else
+                    begin
+                        type:= Ptype;
+                        {code for switch to appropriate version routines would
+                            go here} 
+                        case type of
+                            Data: processData (crPtr, rPkt, sPkt, rWindow,
+                                offset, count, prtctLev, ackFlg, Bflg, Eflg,
+                                nakFlg);
+                            Ack: processAck (crPtr, rPkt, ackOffset, ovflwFlg,
+                                owreOffset, sendCode);
+                            Nak: processNak (crPtr, rPkt, sendCode);
+                            Dcntrl: if rPkt.Psubtype = 1 then processRendezvous
+                                (crPtr, rPkt, rWindow, ackFlg, rsFlg);
+                        end
+                    end 
+        end 
+end {DtPktRcvd}.
+```
 
 ### Receipt of a Data Packet
 
