@@ -2189,20 +2189,48 @@ need to retry if data sent.} end {DtStartData}
 The following procedure specifies the rules for correct Data packet
 header formation.
 
-procedure startDataHeader ({args} crPtr:CRpointer; sPkt:PKTpointer; count:integer; prtctLev:integer; b,e:Boolean);
-begin with crPtrf, sPkt+ do
-Pver := {DeltaGram version number as appropriate}; Ptype := Data; Presl:= 0; Pdn:= false;
-PprtctLev :=prtctLev; P/\texp := AAtexp; Pdestaddr := Aassoc.destAddr; Poriginaddr := Aassoc.originAddr; Pt := false;
-Pds:= false; Pb := b; Pe:= e; Pres2:= 0; Pdl:= count; Pres3:= 0; Pres4:= 0;
-PAtver:= {Delta-t version number as appropriate}; if Sretryind then
-begin Plifetime := SoutPtrf.rrLifetime; Pid := SoutPtr-h.rrpid; Pdrf := (Pid £Sou); {everything sent previously
-has been Acked} Sretryind:= false; deleteRetryEntry(SouPtr)
-end
-end
-else Begin
-Plifetime := 2**AAtexp; Pid := Sowle; Pdrf := (Sou = Sowle)
-end {The PhdrChksum and PdataChksum fields are set in the
-procedure DtFinishData.} end {startDataHeader}.
+```pascal
+procedure startDataHeader ({args} crPtr:CRpointer; sPkt:PKTpointer; 
+count:integer; prtctLev:integer; b,e:Boolean);
+    begin 
+        with crPtrf, sPkt+ do
+            begin
+                Pver := {DeltaGram version number as appropriate}; 
+                Ptype := Data; 
+        Presl:= 0; 
+        Pdn:= false;
+        PprtctLev :=prtctLev; 
+        P/\texp := AAtexp; 
+        Pdestaddr := Aassoc.destAddr; 
+        Poriginaddr := Aassoc.originAddr; 
+        Pt := false;
+        Pds:= false; 
+        Pb := b; 
+        Pe:= e; 
+        Pres2:= 0; 
+        Pol:= count; 
+        Pres3:= 0; 
+        Pres4:= 0;
+        PAtver:= {Delta-t version number as appropriate}; 
+        if Sretryind then
+            begin 
+                Plifetime := SoutPtrf.rrLifetime; 
+                Pid := SoutPtr-h.rrpid; 
+                Pdrf := (Pid £Sou); {everything sent previously
+                    has been Acked} 
+                Sretryind:= false; 
+                deleteRetryEntry(SouPtr)
+            end
+            else 
+                begin
+                    Plifetime := 2**AAtexp; 
+                    Pid := Sowle; 
+                    Pdrf := (Sou = Sowle)
+                end 
+            {The PhdrChksum and PdataChksum fields are set in the
+                    procedure DtFinishData.} 
+end {startDataHeader}.
+```
 
 #### Sending a Rendezvous Packet
 
@@ -2212,45 +2240,90 @@ rendezvous-at-sender state and (overflow has occurred _or (there are
 bits to send and no output window and all data previously sent has
 been Acked).
 
-function shouldRendezvous (crPtr:CRpointer;countl:integer):Boolean; begin
-with crPtr-h do begin
-shouldRendezvous := (not SrendSenderInd) inot in rendezvous-at-Sender state}
-and
-(Sovflwind or ((countl > 0) and (Sowle = Sowre) and (Sou = Sowle)))
-end end {ShouldRendezvous}.
+```pascal
+function shouldRendezvous (crPtr:CRpointer;countl:integer):Boolean; 
+    begin
+        with crPtr-h do 
+            begin
+                shouldRendezvous := (not SrendSenderInd) 
+                {not in rendezvous-at-Sender state}
+                and
+                    (Sovflwind or ((countl > 0) and (Sowle = Sowre) and 
+                        (Sou = Sowle)))
+            end 
+    end {ShouldRendezvous}.
+```
 
 The following procedure calls procedure createRendezvous and performs
 correct state update when a Rendezvous packet is to be sent.
 
+```pascal
 procedure sendRendezvous ({args} crPtr:CRpointer; sPkt:PKTpointer; retryFlg:Boolean);
-procedure createRendezvous ({args} crPtr:CRpointer; sPkt:PKTpointer; retryFlg:Boolean); {defined below}
-begin with crPtrf, do
-begin createRendezvous (crPtr, sPkt, retryFlg); addRetryEntry (crPtr, sPkt); if not retryFlg then
-begin setTimer (crPtr, Stimer, 3*2**AAtexp); Sovflwind:= false; SrendSenderInd:= true
-end; end {sendRendezvous}
-end
-end
+    procedure createRendezvous ({args} crPtr:CRpointer; 
+        sPkt:PKTpointer; 
+        retryFlg:Boolean); {defined below}
+    begin 
+        with crPtrf, do
+            begin 
+                createRendezvous (crPtr, sPkt, retryFlg); 
+                addRetryEntry (crPtr, sPkt); 
+                if not retryFlg then
+                    begin 
+                        setTimer (crPtr, Stimer, 3*2**AAtexp); 
+                        Sovflwind:= false; 
+                        SrendSenderInd:= true
+                    end; 
+            end 
+    end
+end {sendRendezvous}
+```
 
 The following procedure specifies the rules for Rendezvous packet
 formation.
 
-procedure createRendezvous ({args} crPtr:CRpointer; sPkt:PKTpointer {and return}; retryFlg:Boolean);
-const n = {> 0, implementation convenient value used in Psno}; begin
-with crPtrf, sPktt do begin
-Pver := {DeltaGram version as appropriate}; Ptype := Dcntrl; Presl:= 0; Pdn := true;
-PrtctLev := {as required by protection policy{; Pntexp := AAtexp; Pdestaddr := AdestAddr; Poriginaddr := AoriginAddr;
-Psubtype := 0; Pdrf := true; Pres7 := 0; Press := 0; PAtver:= {Delta-t version number as appropriate}
-if retryFlg then begin
-Psno := SoutPtr+.rrSNO; Plifetime := SoutPtr-h.rrLifetime; Pid := SoutPtr+.rrPID
-end else
-begin if Sowle h Sou then Psno := Sowle - Sou;
-{Rendezvous sent due to overflow} else
-begin {Rendezvous sent due to just zero window}
-Psno := n;{consume SN space for assurance} Sowle := Sowle + n;
-Sowre := Sowre + n end;
-Plifetime := 2**AAtexp; Pid := Sou
-end; headerChksum (sPkt)
-end end icreateRendezvous}.
+```pascal
+procedure createRendezvous ({args} crPtr:CRpointer; sPkt:PKTpointer 
+{and return}; retryFlg:Boolean);
+    const n = {> 0, implementation convenient value used in Psno}; 
+    begin
+        with crPtrf, sPktt do 
+            begin
+                Pver := {DeltaGram version as appropriate}; 
+                Ptype := Dcntrl; 
+                Presl:= 0; 
+                Pdn := true;
+                PrtctLev := {as required by protection policy}; 
+                Pntexp := AAtexp; 
+                Pdestaddr := AdestAddr; 
+                Poriginaddr := AoriginAddr;
+                Psubtype := 0; 
+                Pdrf := true; 
+                Pres7 := 0; 
+                Press := 0; 
+                PAtver:= {Delta-t version number as appropriate}
+                if retryFlg then 
+                    begin
+                        Psno := SoutPtr+.rrSNO; 
+                        Plifetime := SoutPtr-h.rrLifetime; 
+                        Pid := SoutPtr+.rrPID
+                    end 
+                else
+                    begin 
+                        if Sowle != Sou then Psno := Sowle - Sou;
+                            {Rendezvous sent due to overflow} 
+                        else
+                            begin {Rendezvous sent due to just zero window}
+                                Psno := n;{consume SN space for assurance} 
+                                Sowle := Sowle + n;
+                                Sowre := Sowre + n; 
+                            end;
+                        Plifetime := 2**AAtexp; 
+                        Pid := Sou;
+                    end; 
+                headerChksum (sPkt)
+    end 
+end {createRendezvous}.
+```
 
 ## Packet Received Event
 
