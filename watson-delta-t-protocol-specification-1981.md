@@ -5,7 +5,7 @@
 > * TODO: Reconstruct the ASCII art. 
 > * TODO: Reconstruct the source-code snippets.
 
-DELTA-t PROTOCOL SPECIFICATION
+# Delta-t Protocol Specification
 
 Richard Watson  
 December 4, 1981
@@ -75,57 +75,55 @@ the CRAY-1 and CDC 7600 running under NLTSS and LTSS, and for the SEL
 
 ## Introduction
 
-Delta-t logically supports a permanent, reliable, flow controlled,
-full duplex, labeled bit stream connection between two ports. There is
-no extra packet exchange overhead to reliably manage connection state
-as in other stream oriented protocols [3,10,12]. Therefore Delta-t can
-support an efficient, low delay, minimum packet exchange, reliable
-transaction oriented service as well as high stream throughput.
+Delta-t logically supports a permanent, reliable, flow controlled, full 
+duplex, labeled bit stream connection between two ports. There is no extra
+packet exchange overhead to reliably manage connection state as in other 
+stream oriented protocols [3,10,12]. Therefore Delta-t can support an
+efficient, low delay, minimum packet exchange, reliable transaction oriented 
+service as well as high stream throughput.
 
-The Delta-t protocol, as defined here, assumes the services of a
-datagram protocol, the DeltaGram protocol [19]. The decomposition of
-services between Delta-t and DeltaGram was made by determining which
-services required intermediate routing node support and those that
-must be performed end-to-end or could be most efficiently handled at
-these points.
+The Delta-t protocol, as defined here, assumes the services of a datagram 
+protocol, the DeltaGram protocol [19]. The decomposition of services between 
+Delta-t and DeltaGram was made by determining which services required 
+intermediate routing node support and those that must be performed end-to-end 
+or could be most efficiently handled at these points.
 
-Below we outline and discuss both the user services visible at the
-next higher level interface to Delta-t and the internal protocol
-mechanisms used to support these. Appendix B outlines the logical
-functionality of an interface to the LINCS-IPC service supported by
-Delta-t [21]. The next higher level interface used in this
-specification is a lower level interface internal to the LINCS-IPC
-layer.
+Below we outline and discuss both the user services visible at the next 
+higher level interface to Delta-t and the internal protocol mechanisms used to 
+support these. Appendix B outlines the logical functionality of an interface 
+to the LINCS-IPC service supported by Delta-t [21]. The next higher level 
+interface used in this specification is a lower level interface internal to 
+the LINCS-IPC layer.
 
 ## Addressing
 
-Communication within the LINCS architecture takes place between
-ports. Ports are identified by 64 bit LINCS addresses. Ports are bound
-to processes. Port to process binding is a higher level issue of no
-concern to Delta-t. Actual data movement between ports is supported by
-the Network layer (DeltaGram) protocol. Therefore no additional
-addressing structure is provided by Delta-t.
+Communication within the LINCS architecture takes place between **ports**. 
+Ports are identified by 64 bit LINCS **addresses**. Ports are bound to 
+processes. Port to process binding is a higher level issue of no concern to 
+Delta-t. Actual data movement between ports is supported by the Network layer 
+(DeltaGram) protocol. Therefore no additional addressing structure is 
+provided by Delta-t.
 
 ## Delta-t Association
 
 An unordered port pair defines a full-duplex data channel called an
-association. Delta-t detects and recovers from lost, duplicated, and
-missequenced data. Damaged data is detected and discarded (lost) by
-the Network layer. Delta-t labels data bits with a protection level
-and optionally also with B and/or E synchronization marks (see Section
-2.6). Internally Delta-t also labels bits with a sequence number,
-version, lifetime, and other control information. Data transfer on an
-association is flow controlled.
+**association**. Delta-t detects and recovers from lost, duplicated, and
+missequenced data. Damaged data is detected and discarded (lost) by the 
+Network layer. Delta-t labels data bits with a protection level and 
+optionally also with B and/or E synchronization marks (see Section 2.6). 
+Internally Delta-t also labels bits with a sequence number, version, lifetime, 
+and other control information. Data transfer on an association is flow 
+controlled.
 
 The state information at each end necessary to provide these services
-logically always exists for all possible associations (permanent
+**logically** always exists for all possible associations (permanent
 connections). After appropriate timeouts, the state information is
 reset to default values. When this state information has a default
 value it can be deallocated and does not need to be maintained by the
-implementation. Management of this state (connection management) is
+implementation. Management of this state (**connection management**) is
 under timer control and does not require user interface primitives or
 special opening and closing packet exchanges [14,16]. The state at
-each end is kept in connection records (CR).
+each end is kept in **connection records** (CR).
 
 Delta-t's assurance, flow control, and connection management
 mechanisms are outlined in the appropriate following sections.
@@ -168,12 +166,12 @@ Delta-t assurance mechanisms are now outlined.
 
 Delta-t detects and recovers from lost packets by positive
 acknowledgment and retransmission. The origin transmits a packet and
-then waits an interval for a positive acknowledgment (Ack). This
+then waits an interval for a positive acknowledgment (**Ack**). This
 interval is usually slightly longer than the average round trip time
 for a packet and its Ack to be generated and traverse the network. If
 an Ack is not forthcoming in that interval, the unacknowledged packet
 is retransmitted. If no positive acknowledgment is received after
-attempting some number of retransmissions (giveup time), an error is
+attempting some number of retransmissions (**giveup time**), an error is
 reported to the user with an indication of the successfully Acked data
 and of data transmitted but not Acked. A giveup timeout can result
 through failure of data to be delivered or failure of Acks to be
@@ -203,7 +201,7 @@ for diagnostic purposes.
 An acknowledgment mechanism is based on being able to identify the
 units acknowledged. In Delta-t bits are numbered sequentially with a
 sequence number. An Ack indicates the SN of the next bit the receiver
-expects to receive. The acknowledged SN (ASN) implies acknowledgment
+expects to receive. The acknowledged SN (**ASN**) implies acknowledgment
 of all previous SNs. Therefore, if an Ack is lost, Acks of succeeding
 bits acknowledge preceding bits. Similarly, duplication of Acks will
 cause no difficulty because they just confirm what is already known.
@@ -214,17 +212,17 @@ in the SN field. In Delta-t n = 32. Because SNs wrap around, care must
 be taken to avoid having two different bits or their Acks with the
 same SN in the network at once. Because Naks are used strictly as an
 efficiency or diagnostic hint Nak ambiguity is not an assurance
-problem. If we define the term MPL to stand for either the longest
+problem. If we define the term **MPL** to stand for either the longest
 time a packet can exist, or is estimated to exist or is desired to
-exist in the network (maximum-packet-lifetime), R as the maximum time
-a sender will keep retransmitting a packet, A as the maximum time a
-receiver will wait before sending an Ack, and T as the maximum new SN
+exist in the network (maximum-packet-lifetime), **R** as the maximum time
+a sender will keep retransmitting a packet, **A** as the maximum time a
+receiver will wait before sending an Ack, and **T** as the maximum new SN
 generation rate (often maximum transmission rate), then, assuming new
 bits are transmitted at the maximum rate even while retransmission
 takes place, the following inequality must be satisfied to meet the
 above unique SN condition:
 
-$2^n > (2*MPL + R + A)T$.
+        2^n > (2*MPL + R + A)T
 
 This inequality assures that a sender generating SNs at the maximum
 rate will not reuse an SN until it is guaranteed that an SN and any
@@ -234,7 +232,7 @@ Acks of it have arrived or no longer exist in the network.
 
 SNs are also used for duplicate detection. At any point in time the
 receiver knows what SN it is expecting next. We call this SN the
-left-window-edge (LWE), because at any point in time, for assurance
+**l**eft-**w**indow-**e**dge (LWE), because at any point in time, for assurance
 and flow control reasons, the receiver is only willing to accept bits
 with SNs within a particular range called the acceptance window. SNs
 less than the LWE are duplicates [17]. Duplicates are discarded and
@@ -247,12 +245,12 @@ A missequenced bit is one with an SN not equal to the LWE but within
 the acceptance window. Two implementation choices exist for handling a
 missequenced bit:
 
-  (1) it can be held (its lifetime continues counting down) until its
+  1)  it can be held (its lifetime continues counting down) until its
       predecessors arrive, on the assumption they will follow shortly
       and all can be Acked before the sender's retransmission interval
       elapses, thus increasing efficiency, or
 
-  (2) it can be discarded, with retransmissions providing for correct
+  2)  it can be discarded, with retransmissions providing for correct
       ordering thus simplifying the implementation.
 
 The model of Section 6 assumes the latter.
@@ -260,10 +258,10 @@ The model of Section 6 assumes the latter.
 ## Synchronization Including Connection Management
 
 Delta-t's synchronization services support bits being labeled with B
-and E marks (B-bit and E-bit respectively) and a guarantee of
+and E marks (**B-bit** and **E-bit** respectively) and a guarantee of
 sequenced data delivery. Use of B- and E-bits is determined by higher
 level convention. The purpose of the B-bit is to label the beginning
-of a higher level data unit, such as a message [20]. It provides a
+of a higher level data unit, such as a **message** [20]. It provides a
 synchronization mark in the data stream where parsing or other
 operation can safely begin. This function is provided in other
 transport protocols by explicit connection opening packet
@@ -280,31 +278,29 @@ for connection management.
 
 Conceptually, there are three main phases in connection management
 (explicit phase separation is not required in Delta-t): (1)
-initializing (opening) the connection records at each end to
+initializing (**opening**) the connection records at each end to
 nondefault values, (2) evolving the state during ongoing data
-transfer, and (3) resetting or terminating (closing) state information
+transfer, and (3) resetting or terminating (**closing**) state information
 when no further data needs to be transferred. During the reliable
 opening of a transport protocol assurance connection, the main problem
 is establishing initial SNs meeting the following opening conditions:
 
-O1: If no connection state exists or it is in the default state,
+- O1: If no connection state exists or it is in the default state,
 (connection closed) and the receiver is willing to receive, then no
 packets from a previous connection should cause a connection to be
 initialized and duplicate data to be accepted.
-
-O2: If a connection exists, then no packets from a previous connection
+- O2: If a connection exists, then no packets from a previous connection
 should be acceptable within the current connection.
 
 In order to avoid ambiguity about the state of data sent, connections
 should be closed in a way allowing each side to know that the other
-side has received any data sent (a graceful close). This implies two
+side has received any data sent (a **graceful** close). This implies two
 closing conditions:
 
-C1: A receiving side must not close until it has received all of a
+- C1: A receiving side must not close until it has received all of a
 sender's possible retransmissions and can unambiguously respond to
 them, and
-
-C2: A sending side must not close until it has received an Ack for all
+- C2: A sending side must not close until it has received an Ack for all
 its transmitted data or allowed time for an Ack of its final
 retransmission to return before reporting a giveup failure.
 
@@ -338,7 +334,7 @@ packet header control flags, SN selection, and packet acceptance are
 developed in [6] and Appendix A. They are quite simple. We define the
 quantity,
 
-Δt = MPL + R + A, where MPL is a worst case estimate of the time for
+```Δt = MPL + R + A```, where MPL is a worst case estimate of the time for
 traversing the network and R and A are as defined earlier.
 
 Safe values for use in initializing the timers are:
@@ -346,35 +342,35 @@ Safe values for use in initializing the timers are:
     receive-time = 2*Δt
     send-time = 3*Δt.
 
-R.l) Stimer is refreshed whenever a new SN (i.e. a new data bit or
+- R.1) Stimer is refreshed whenever a new SN (i.e. a new data bit or
      Rendezvous packet) or reliable-Ack is sent (see Section 2.7.3 for
      discussion of rendezvous and reliable-Acks).
 
-R.2) Once a bit $b_i$ has had its maximum retransmission time (or
+- R.2) Once a bit $b_i$ has had its maximum retransmission time (or
      equivalently maximum number of retransmissions) no new bits can
      be transmitted until $b_i$ has been Acked; bits $b_{i+k}$ which
      had previously been transmitted can continue being retransmitted
      until their maximum retransmission time.
 
-R.3) Rtimer is refreshed whenever a new SN is accepted or data
+- R.3) Rtimer is refreshed whenever a new SN is accepted or data
      overflow occurs.
 
-R.4) When Rtimer expires, the receive state is reset to its default
+- R.4) When Rtimer expires, the receive state is reset to its default
      values.
 
-R.5) Once a bit or Rendezvous or reliable-Ack is initially transmitted
+- R.5) Once a bit or Rendezvous or reliable-Ack is initially transmitted
      its lifetime is set equal to Δt and starts counting down.
 
-R.6) At the point an SN is tested for acceptance, the lifetime of any
+- R.6) At the point an SN is tested for acceptance, the lifetime of any
      Ack packet generated is set equal to Δt and begins counting down.
 
-R.7) When Stimer expires (giveup timeout) the send state is reset to
+- R.7) When Stimer expires (giveup timeout) the send state is reset to
      its default values, any initial SN can be used when new data
      needs sending, and if unAcked SNs exist a giveup error is
      reported.
 
 Delta-t packet headers label their first bits with a Data-Run-Flag
-(Pdrf), set 1 in packets sent when all previously sent SNs have been
+(**Pdrf**), set 1 in packets sent when all previously sent SNs have been
 acknowledged, allowing receivers to detect missequenced packets before
 it has initialized its state [6]. When the Rtimer is nonzero only
 packets with SNs in the acceptance window can be accepted and the Pdrf
@@ -473,7 +469,7 @@ user and system buffers, CPU cycles, interface access) and yet allows
 efficient transmission on an association, independent of the widely
 varying implementation choices possible. Until we feel we understand
 the issues better we have chosen for this version of Delta-t the
-simple window or credit flow control mechanism. It works as follows.
+simple **window** or **credit** flow control mechanism. It works as follows.
 
 Each Ack packet contains a window (credit) field indicating the
 additional number of bits of data, relative to the ASN, that the
@@ -499,14 +495,14 @@ optimum policy is dependent on receiver operation and buffer
 management strategy, normally unknown to the sender.
 
 Choice of these policies as well as protocol mechanisms supporting
-reliable window exchange is called window management. While choice of
+reliable window exchange is called **window management**. While choice of
 these policies and their interaction can significantly affect
 performance our level of understanding is such that this specification
 cannot provide much in the way of explicit guidance, except as
 follows. First sending policy.
 
-The sender must update its estimate (output window) of the receiver's
-available input window according to the following rule: As each bit is
+The sender must update its estimate (**output window**) of the receiver's
+available **input window** according to the following rule: As each bit is
 sent decrement by one the output window, unless the bit is labeled
 with an E, delimiting a higher level data unit. In the latter case the
 sender should assume the available output window goes to zero. The
@@ -531,7 +527,7 @@ The discussion to follow contains more motivation than that for other
 mechanisms because the issues are not documented elsewhere. A question
 that sending policy must answer is the following. When the state
 record at the sender indicates that the receiver has less space than
-it has data to send (particularly a zero length output window) and all
+it has data to send (particularly a **zero length output window**) and all
 data sent has been Acked, how long should it wait before attempting to
 send? The answer must consider the problem resulting from the
 possibility of missequenced or lost Ack packets [7] and that the
@@ -571,8 +567,8 @@ signal window opening when it occurs.
 The mechanism is the following and is illustrated in Figure 2.2. When
 the sender's state indicates that all data sent have been Acked, there
 is data to send, and a zero window exists, it sends what is called a
-Rendezvous packet indicating that it wants to be informed
-(rendezvous-at-the-sender) when the window goes positive (which might
+**Rendezvous** packet indicating that it wants to be informed
+(**rendezvous-at-the-sender**) when the window goes positive (which might
 be immediately). The Rendezvous packet contains a field that consumes
 SN space protecting it against duplication or missequencing. Since it
 is only sent when all previous data have been Acked, none of the usual
@@ -583,7 +579,7 @@ loss. When the receiver's input window opens and it is in the
 rendezvous-at-sender state, it will send a specially labeled Ack
 packet and at retry intervals retransmit this packet until it receives
 an acceptable Data packet (which in effect "Acks" it), thus protecting
-the "window opening" Ack (reliable-Ack) against loss. Duplication or
+the "window opening" Ack (**reliable-Ack**) against loss. Duplication or
 missequencing of these Acks at most cause extra packet exchanges and
 are not assurance hazards. We now discuss issues associated with
 window overrun.
@@ -2986,7 +2982,7 @@ community influenced several decisions.
  - 11: J. M. McQuillan, V. G. Cerf, Tutorial: A Practical View of
    Computer Communications Protocols, IEEE Catalog No. EHO 137-0,
    1978.
-
+   
  - 12: J. 6. Postel, "Specification of Internetwork Transmission
    Control Protocol," TCP Version 4, Jan. 1980, available through
    Defense Advanced Research Projects Agency, IPTO.
