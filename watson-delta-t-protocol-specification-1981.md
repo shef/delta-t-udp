@@ -848,9 +848,9 @@ For the purposes of this specification we view the Delta-t environment
 as logically consisting of three asynchronously running processes
 which we call:
 
-  (1) User,  
-  (2) IPC (embodying Delta-t) and  
-  (3) Link.
+  * (1) User,  
+  * (2) IPC (embodying Delta-t) and  
+  * (3) Link.
 
 The Network (DeltaGram) level is embodied as procedures in both the
 IPC and Link processes. We use the term process simply to indicate a
@@ -971,19 +971,19 @@ follows:
 
 User Interface Events:
 
- - Procedures DtStartData and DtFinishData report IPC user interface
+ - Procedures ```DtStartData``` and ```DtFinishData``` report IPC user interface
    data sending events or the requirement to Ack a reliable-Ack.
 
- - Procedure DtAck reports IPC user interface buffer allocation
+ - Procedure ```DtAck``` reports IPC user interface buffer allocation
    events, or the need to Ack a received Data or Rendezvous packet.
 
 Timer:
 
- - Procedure DtTimeout reports the expiration of a Delta-t timer.
+ - Procedure ```DtTimeout``` reports the expiration of a Delta-t timer.
 
 Packet Receipt:
 
- - Procedure DtPktRcvd reports the receipt of a packet.
+ - Procedure ```DtPktRcvd``` reports the receipt of a packet.
 
 The reporting of expiration of Delta-t's Rtimer and packet receipt
 have time dependency. If there is too long a delay between the
@@ -1043,7 +1043,7 @@ end {EIMalarm}.
 # Delta-t Use of DeltaGram Packet Header Fields
 
 The Delta-t protocol, as specified here, is assumed to use the
-DeltaGram protocol [19]. Delta-t aoes not need explicit packet header
+DeltaGram protocol [19]. Delta-t does not need explicit packet header
 space of its own because it can utilize services provided by
 DeltaGram.
 
@@ -1075,36 +1075,38 @@ in 32 bit blocks.
 ```
 The meaning of the fields is the following.
 
-Pver: 2 bit DeltaGram version number (see DeltaGram specification for usage).
+```
+Pver:   2 bit DeltaGram version number (see DeltaGram specification for usage).
 
-Ptype: 2 bit packet type.
- - 0 Datapacket.
- - 1 Reverse Control (Delta-tAck).
- - 2 DirectControl(Delta-tRendezvous).
- - 3 Nak.
+Ptype:      2 bit packet type.
+            0 Data packet.
+            1 Reverse Control (Delta-t Ack).
+            2 DirectControl(Delta-tRendezvous).
+            3 Nak.
 
-Presl: 3 bits reserved.
+Presl:      3 bits reserved.
 
-Pdn: 1 bit, do not Nak if undeliverable flag.
+Pdn:        1 bit, do not Nak if undeliverable flag.
 
 PhdrChksum: 8 bit header checksum - see DeltaGram specification for
-algorithm.
+            algorithm.
 
-PprtctLev: 4 bit protection level.
+PprtctLev:  4 bit protection level.
 
-PΔtexp: 4 bits for determining tick size used to decrement Plifetime
-and to determine initial Plifetime. tick = 2**PΔtexp / 256 seconds.
+PΔtexp:     4 bits for determining tick size used to decrement Plifetime
+            and to determine initial Plifetime. tick = 2**PΔtexp / 256 seconds.
 
-Plifetime: 8 bits remaining packet lifetime, in tick units.
+Plifetime:  8 bits remaining packet lifetime, in tick units.
 
-Pid: 32 bit packet identifier (Delta-tSN).
+Pid:        32 bit packet identifier (Delta-tSN).
 
-PdestAddr: 64 bit destination port identifer.
+PdestAddr:  64 bit destination port identifer.
 
-PoriginAddr: 64 bit origin port identifer.
+PoriginAddr:    64 bit origin port identifer.
 
-Ptdf: 64 bit packet-type-dependent-field defined below (may exceed 64
-bits for Data packets).
+Ptdf:       64 bit packet-type-dependent-field defined below (may exceed 64
+            bits for Data packets).
+```
 
 A packet interface between Delta-t and DeltaGram is assumed here; that
 is, Delta-t makes up a complete DeltaGram packet header and receives a
@@ -1113,74 +1115,85 @@ Delta-t utilizes or sets each header field for the four DeltaGram
 packet types is now defined. For all the packet types the following
 field settings apply.
 
-Pver: Set to appropriate DeltaGram version.
+```
+Pver:       Set to appropriate DeltaGram version.
 
-Presl: Set 0.
+Presl:      Set 0.
 
 PhdrChksum: Calculated and set as appropriate.
 
-PAtexp: Set from global association or connection record state, as
-required by packet type.
+PAtexp:     Set from global association or connection record state, as
+            required by packet type.
 
-Plifetime: Set as appropriate to Delta-t operation.
+Plifetime:  Set as appropriate to Delta-t operation.
 
-PdestAddr: Set to the appropriate destination address.
+PdestAddr:  Set to the appropriate destination address.
 
-PoriginAddr: Set to the appropriate origin address.
+PoriginAddr:    Set to the appropriate origin address.
+```
 
 The remaining header fields are set dependent on packet type.
 
-## DataPackets
+## Data Packets
 
-Ptype: Set to 0, Data.
+```
+Ptype:      Set to 0, Data.
 
-Pdn: Set 0, Nak if undeliverable.
+Pdn:        Set 0, Nak if undeliverable.
 
-PprtctLev: Set to the protection level of the data contained.
+PprtctLev:  Set to the protection level of the data contained.
 
-Pid: Set to the SN of the first bit in the packet or that of the next bit to be sent if no data is contained.
+Pid:        Set to the SN of the first bit in the packet or that of 
+            the next bit to be sent if no data is contained.
 
-Ptdf: The Ptdf field for a DeltaGram Data packet has the following
-format. The formats of the DeltaGram Pfbl, Plbl, and Pabl fields can
-be defined by Delta-t for its bit labeling use.
+Ptdf:       The Ptdf field for a DeltaGram Data packet has the 
+            following format. The formats of the DeltaGram Pfbl, 
+            Plbl, and Pabl fields can be defined by Delta-t for its 
+            bit labeling use.
 
-0 1516 2324 31 1        1 Pfbl 1 Plbl 1 1       PoataChksum     |       |       1       1
-2 4     1112|Pres2|Pb|Pdrf|Pres3 1Pe1 1111 1
-Pdl
+0                                15 16        23 24          31
++-------------------------------------------------------------+ 
+|                                  | Pfbl | Plbl 1 
+|       PoataChksum     |       |       1       1
+|2 4     11 12|Pres2|Pb|Pdrf|Pres3 |Pe1 |
+-----------------------------------------
+|Pdl
 1 1 1   iPAtver 1 11 1  PuserData       1
 iPdslPtl 1 1 i1 Pres41  1
 1 Pabl  1
 
-PdataChksum: Set to checksum of PuserData (see DeltaGram specification
-for algorithm).
+PdataChksum:    Set to checksum of PuserData (see DeltaGram 
+                specification for algorithm).
 
 Pfbl:
+    Pres2:  6 bits reserved, set 0.
+    Pb:     The B mark, set as appropriate for labeling the first data bit in
+            the packet.
+    Pdrf:   The data-run-flag, labels first bit.
+            1 All previously sent bits have been Acked,
+            0 There are outstanding unAcked bits.
 
- - Pres2: 6 bits reserved, set 0.
- - Pb: TheBmark,setasappropriateforlabelingthefirstdatabitin the packet.
- - Pdrf: Thedata-run-flag,labelsfirstbit.
-    - 1 AllpreviouslysentbitshavebeenAcked,
-    - 0 ThereareoutstandingunAckedbits.
+Plbl:
+    Pres3:  7 bits reserved, set 0.
+    Pe:     The E mark, set as appropriate for labeling the last data bit in
+            the packet.
 
-Plbl
- - Pres3: 7bitsreserved,set0.
- - Pe: TheEmark,setasappropriateforlabelingthelastdatabitin the packet.
+Pds:        Set 0, can segment if necessary.
 
-Pds: Set0,cansegmentifnecessary.
-
-Pt: Set0,notraceortimestampdiagnostics.
+Pt:         Set 0, no trace or timestamp diagnostics.
 
 Pabl
- - Pres4: 8 bits (6 bits in Pabl and 2 additional) reserved, set 0.
- - PAtver: 2 bit Delta-t version number. The four versions have
-   similar meaning as for DeltaGram, although the version numbers may
-   be different.
+    Pres4:  8 bits (6 bits in Pabl and 2 additional) reserved, set 0.
+    PAtver: 2 bit Delta-t version number. The four versions have
+            similar meaning as for DeltaGram, although the version 
+            numbers may be different.
 
-Pdl: SettothenumberofbitsinthePuserDatafield.
+Pdl:        Set to the number of bits in the PuserData field.
 
-PuserData: Variable,0ormoredatabits.
+PuserData:  Variable,0ormoredatabits.
+```
 
-## AckPackets(ReverseControl)
+## Ack Packets (Reverse Control)
 
 DeltaGram Reverse Control packets are used for Delta-t Acknowledgment.
 
@@ -1751,7 +1764,9 @@ Sovflwind,
                     the SN's of the overflow data have been skipped.}
 
 SeSentInd, 
-    {Purpose:   A model dependent flag indicating that an E-bit has been sent, but has not yet been Acked. While SeSentInd is true the output window (Sowre-Sowle should remain zero.
+    {Purpose:   A model dependent flag indicating that an E-bit has been 
+                sent, but has not yet been Acked. While SeSentInd is true 
+                the output window (Sowre-Sowle should remain zero.
     Default:    false.
     When changed:   SeSentInd is set in the procedure sendData when an 
                      E-bit is sent and is reset in the procedure processAck.}
